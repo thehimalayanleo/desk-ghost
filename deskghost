@@ -1,0 +1,18 @@
+#!/bin/zsh
+# Desk Ghost launcher: opens a small window of its own. `./deskghost --save-keys` stores keys from this shell.
+DIR=${0:A:h}
+KEYS=~/.deskghost/keys.env
+if [[ $1 == --save-keys ]]; then
+  mkdir -p ~/.deskghost && umask 077 && : > $KEYS
+  for k in ANTHROPIC_API_KEY AGENT37_API_KEY OPENAI_API_KEY; do [[ -n ${(P)k} ]] && echo "$k=${(P)k}" >> $KEYS; done
+  chmod 600 $KEYS && echo "saved $(wc -l < $KEYS | tr -d ' ') keys to $KEYS"; exit
+fi
+if [[ $1 == --here ]]; then cd $DIR && exec .venv/bin/python ghost.py; fi
+if [[ $1 != --terminal ]]; then cd $DIR && nohup .venv/bin/python ghost_app.py >/dev/null 2>&1 & disown; exit; fi
+if [[ -d /Applications/Ghostty.app ]]; then
+  open -na Ghostty --args --title="Desk Ghost" --window-width=58 --window-height=22 --font-size=12 \
+    --background-opacity=0.92 -e $DIR/deskghost --here
+else
+  osascript -e "tell application \"Terminal\" to do script \"$DIR/deskghost --here\"" \
+            -e 'tell application "Terminal" to set bounds of front window to {60, 60, 560, 460}'
+fi
